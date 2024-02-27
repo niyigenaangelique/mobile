@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:contacts_service/contacts_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 void main() {
   runApp(MyApp());
@@ -28,14 +31,51 @@ class _MyHomePageState extends State<MyHomePage> {
   int _selectedIndex = 0;
   List<Widget> _screens = [
     HomeScreen(),
-    CalculatorScreen(),
-    ImageScreen(),
+    ContactsScreen(),
+    GalleryScreen(),
   ];
 
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  void _openContacts() async {
+    // Request permission to access contacts
+    var status = await Permission.contacts.request();
+
+    // Check if permission is granted
+    if (status.isGranted) {
+      // If permission is granted, retrieve the contacts
+      Iterable<Contact> contacts = await ContactsService.getContacts();
+      // Now you have access to the contacts, you can use them as needed
+      print(contacts);
+    } else {
+      // Handle the case where permission is denied
+      // You might want to display a message to the user or handle it in another way
+      print('Permission to access contacts was denied');
+    }
+  }
+
+  void _openGallery() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      // You have the picked image file, you can now do whatever you want with it
+      // For example, display it in an Image widget or upload it to a server
+      print(pickedFile.path);
+    }
+  }
+
+  void _openCamera() async {
+    final pickedFile =
+        await ImagePicker().pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      // You have the picked image file, you can now do whatever you want with it
+      // For example, display it in an Image widget or upload it to a server
+      print(pickedFile.path);
+    }
   }
 
   @override
@@ -52,12 +92,12 @@ class _MyHomePageState extends State<MyHomePage> {
             label: 'Home',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calculate),
-            label: 'Calculator',
+            icon: Icon(Icons.contacts),
+            label: 'Contacts',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.image),
-            label: 'Image',
+            icon: Icon(Icons.photo),
+            label: 'Gallery',
           ),
         ],
         currentIndex: _selectedIndex,
@@ -67,64 +107,64 @@ class _MyHomePageState extends State<MyHomePage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: <Widget>[
-            DrawerHeader(
-              child: Text('Menu'),
+            UserAccountsDrawerHeader(
+              accountName: Text('Niyigena Angelique'),
+              accountEmail: Text('angelbrenna20@gmail.com'),
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: AssetImage(
+                    'assets/profile_picture.jpg'), // Placeholder image
+              ),
               decoration: BoxDecoration(
-                color: Color.fromARGB(126, 176, 250, 211),
+                color: Colors.blue,
               ),
             ),
             ListTile(
               title: Text('Home'),
               onTap: () {
                 Navigator.pop(context);
-                _onItemTapped(0);
+                _onItemTapped(0); // Navigate to the corresponding screen
               },
             ),
             ListTile(
-              title: Text('Calculator'),
-              onTap: () {
+              title: Text('Contacts'),
+              onTap: () async {
                 Navigator.pop(context);
-                _onItemTapped(1);
+                var status = await Permission.contacts.request();
+                if (status.isGranted) {
+                  _openContacts();
+                } else {
+                  // Handle permission denied
+                }
               },
             ),
             ListTile(
-              title: Text('Image'),
+              title: Text('Gallery'),
+              onTap: () async {
+                Navigator.pop(context);
+                var status = await Permission.photos.request();
+                if (status.isGranted) {
+                  _openGallery();
+                } else {
+                  // Handle permission denied
+                }
+              },
+            ),
+            ListTile(
+              title: Text('Upload Profile Picture'),
               onTap: () {
                 Navigator.pop(context);
-                _onItemTapped(2);
+                _openGallery();
+              },
+            ),
+            ListTile(
+              title: Text('Use Camera'),
+              onTap: () {
+                Navigator.pop(context);
+                _openCamera();
               },
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class ImageScreen extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Icon(
-            Icons.image,
-            size: 100,
-            color: Colors.blue,
-          ),
-          Text(
-            'Image',
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-          ),
-          SizedBox(
-            height: 20,
-          ),
-          Container(
-              padding: EdgeInsets.all(16),
-              child: Image.file(File(
-                  'C:/Users/hp/Documents/m0bile/tab_proj/assets/images/a.png'))),
-        ],
       ),
     );
   }
@@ -152,204 +192,46 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class CalculatorScreen extends StatefulWidget {
-  @override
-  _CalculatorScreenState createState() => _CalculatorScreenState();
-}
-
-class _CalculatorScreenState extends State<CalculatorScreen> {
-  String _expression = '';
-  double _result = 0;
-  String _operator = '';
-  double _lastNumber = 0;
-
-  void _clear() {
-    setState(() {
-      _expression = '';
-      _result = 0;
-      _operator = '';
-      _lastNumber = 0;
-    });
-  }
-
-  void _append(String value) {
-    setState(() {
-      _expression += value;
-    });
-  }
-
-  void _chooseOperator(String operator) {
-    if (_operator.isNotEmpty) {
-      _calculate();
-    }
-    _operator = operator;
-    _lastNumber = _result;
-    _expression = '';
-  }
-
-  void _calculate() {
-    switch (_operator) {
-      case '+':
-        setState(() {
-          _result = _lastNumber + double.parse(_expression);
-        });
-        break;
-      case '-':
-        setState(() {
-          _result = _lastNumber - double.parse(_expression);
-        });
-        break;
-      case '*':
-        setState(() {
-          _result = _lastNumber * double.parse(_expression);
-        });
-        break;
-      case '/':
-        if (double.parse(_expression) == 0) {
-          return;
-        }
-        setState(() {
-          _result = _lastNumber / double.parse(_expression);
-        });
-        break;
-    }
-    _expression = '';
-  }
-
+class ContactsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Center(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Container(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              _expression == '' ? 'Enter expression' : _expression,
-              style: TextStyle(fontSize: 24),
-            ),
+          Icon(
+            Icons.contacts,
+            size: 100,
+            color: Colors.blue,
           ),
-          Container(
-            padding: EdgeInsets.all(16),
-            child: Text(
-              'Result: $_result',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
+          Text(
+            'Contacts',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: _clear,
-                child: Text('AC'),
-                style: ElevatedButton.styleFrom(primary: Colors.red),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('+/-');
-                },
-                child: Text('+/-'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('%');
-                },
-                child: Text('%'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('=');
-                },
-                child: Text('='),
-              ),
-            ],
+        ],
+      ),
+    );
+  }
+}
+
+class GalleryScreen extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Icon(
+            Icons.photo,
+            size: 100,
+            color: Colors.blue,
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  _append('7');
-                },
-                child: Text('7'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('8');
-                },
-                child: Text('8'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('9');
-                },
-                child: Text('9'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('*');
-                },
-                child: Text('X'),
-              ),
-            ],
+          Text(
+            'Gallery',
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  _append('4');
-                },
-                child: Text('4'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('5');
-                },
-                child: Text('5'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('6');
-                },
-                child: Text('6'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('/');
-                },
-                child: Text('/'),
-              ),
-            ],
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  _append('1');
-                },
-                child: Text('1'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('2');
-                },
-                child: Text('2'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _append('3');
-                },
-                child: Text('3'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  _chooseOperator('+');
-                },
-                child: Text('+'),
-              ),
-            ],
-          ),
-        ]);
+        ],
+      ),
+    );
   }
 }
